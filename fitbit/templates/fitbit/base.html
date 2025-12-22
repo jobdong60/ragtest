@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MyHealth Partner{% endblock %} - MyHealth Partner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link.active .icon-container { background-color: #10b981; color: white; }
+        .sidebar-link.active .link-text { color: #047857; font-weight: 600; }
+        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .submenu.open { max-height: 200px; }
+        .modal-overlay { transition: opacity 0.2s ease-in-out; }
+        .modal-container { transition: transform 0.2s ease-in-out; }
+        .modal-hidden { opacity: 0; pointer-events: none; }
+        .modal-visible { opacity: 1; pointer-events: auto; }
+
+        /* Mobile sidebar transitions */
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+        }
+
+        /* Responsive typography - fluid sizing */
+        :root {
+            font-size: 14px;
+        }
+
+        @media (min-width: 640px) {
+            :root {
+                font-size: 15px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            :root {
+                font-size: 16px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            :root {
+                font-size: 16px;
+            }
+        }
+
+        /* Fluid components */
+        h1 { font-size: clamp(1.25rem, 2vw + 0.5rem, 2rem); }
+        h2 { font-size: clamp(1.125rem, 1.5vw + 0.5rem, 1.5rem); }
+        h3 { font-size: clamp(1rem, 1.2vw + 0.5rem, 1.25rem); }
+
+        /* Tables */
+        table { font-size: clamp(0.75rem, 1vw + 0.25rem, 0.875rem); }
+        table th, table td { padding: clamp(0.5rem, 1vw, 0.75rem); }
+
+        /* Buttons */
+        .btn {
+            font-size: clamp(0.75rem, 1vw + 0.25rem, 0.875rem);
+            padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.75rem, 2vw, 1rem);
+        }
+
+        /* Inputs */
+        input, select, textarea {
+            font-size: clamp(0.875rem, 1vw + 0.25rem, 1rem);
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-100">
+        <!-- Mobile overlay -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
+
+        <!-- 왼쪽 사이드바 메뉴 -->
+        <aside id="sidebar" class="sidebar fixed md:static w-64 bg-white flex flex-col shadow-lg z-30 h-full">
+            <!-- 로고 -->
+            <div class="px-6 py-5 border-b border-gray-200">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 flex items-center justify-center text-green-500">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke-linejoin="round"/>
+                            <path d="M2 17L12 22L22 17" stroke-linejoin="round"/>
+                            <path d="M2 12L12 17L22 12" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-800 ml-2">MyHealth</h1>
+                </div>
+            </div>
+
+            <!-- 메뉴 네비게이션 -->
+            <nav class="flex-1 px-4 py-4 space-y-1">
+                <a href="{% url 'admin_dashboard' %}" class="flex items-center px-4 py-2.5 rounded-lg transition-colors group hover:bg-gray-100 sidebar-link {% if active_menu == 'dashboard' %}active{% endif %}">
+                    <div class="icon-container w-8 h-8 mr-3 flex items-center justify-center rounded-md bg-transparent text-gray-400 group-hover:text-gray-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                    </div>
+                    <span class="link-text font-medium text-gray-500 group-hover:text-gray-900">홈</span>
+                </a>
+                <a href="{% url 'admin_subjects' %}" class="flex items-center px-4 py-2.5 rounded-lg transition-colors group hover:bg-gray-100 sidebar-link {% if active_menu == 'subjects' %}active{% endif %}">
+                    <div class="icon-container w-8 h-8 mr-3 flex items-center justify-center rounded-md bg-transparent text-gray-400 group-hover:text-gray-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                    </div>
+                    <span class="link-text font-medium text-gray-500 group-hover:text-gray-900">대상자현황</span>
+                </a>
+                <a href="{% url 'admin_subjects' %}" class="flex items-center px-4 py-2.5 rounded-lg transition-colors group hover:bg-gray-100 sidebar-link {% if active_menu == 'management' %}active{% endif %}">
+                    <div class="icon-container w-8 h-8 mr-3 flex items-center justify-center rounded-md bg-transparent text-gray-400 group-hover:text-gray-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <span class="link-text font-medium text-gray-500 group-hover:text-gray-900">대상자 관리</span>
+                </a>
+            </nav>
+
+            <!-- 사이드바 하단 (로그아웃 버튼) -->
+            <div class="px-6 py-4 mt-auto border-t border-gray-200">
+                {% if user.is_authenticated %}
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-green-200 text-green-700 flex items-center justify-center font-bold">{{ user.username.0|upper }}</div>
+                        <p class="text-sm font-semibold text-gray-800 ml-3">{{ user.username }}</p>
+                    </div>
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" title="Logout" class="text-gray-400 hover:text-red-500 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </aside>
+
+        <!-- 메인 영역 -->
+        <main class="flex-1 flex flex-col w-full md:w-auto">
+            <!-- Mobile header with menu button -->
+            <div class="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+                <h1 class="text-lg font-bold text-gray-800">MyHealth Partner</h1>
+                <button id="mobileMenuBtn" type="button" class="text-gray-600 hover:text-gray-900">
+                    <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+<script>
+    (function() {
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        if (mobileMenuBtn && sidebar && overlay) {
+            function openSidebar() {
+                sidebar.classList.add('open');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+
+            mobileMenuBtn.addEventListener('click', openSidebar);
+            overlay.addEventListener('click', closeSidebar);
+
+            // Close sidebar when clicking a link on mobile
+            const sidebarLinks = sidebar.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 768) {
+                        closeSidebar();
+                    }
+                });
+            });
+        }
+    })();
+</script>
+</html>

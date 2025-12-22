@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MyHealth Partner{% endblock %}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 16px 16px 0 0;
+            padding: 20px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #667eea;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: #f1f3f5;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #666;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            background: white;
+            padding: 0 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 5px;
+            border-bottom: 2px solid #f1f3f5;
+        }
+
+        .tab-item {
+            padding: 16px 24px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+            position: relative;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-item:hover {
+            color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .tab-item.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        /* Content Area */
+        .content {
+            background: white;
+            border-radius: 0 0 16px 16px;
+            padding: 30px;
+            min-height: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        /* Page Title */
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* Cards */
+        .card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-top: 30px;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .tab-nav {
+                overflow-x: auto;
+                padding: 0 15px;
+            }
+
+            .tab-item {
+                white-space: nowrap;
+                padding: 12px 16px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">MyHealth Partner</div>
+            {% if request.session.user_id %}
+            <div class="user-info">
+                <span class="user-name">사용자 {{ request.session.user_id }}</span>
+                <a href="{% url 'logout' %}" class="btn-logout">로그아웃</a>
+            </div>
+            {% else %}
+            <div class="user-info">
+                <a href="{% url 'login' %}" class="btn btn-primary">로그인</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Tab Navigation -->
+        {% if request.session.user_id %}
+        <nav class="tab-nav">
+            <a href="{% url 'home' %}" class="tab-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                홈
+            </a>
+            <a href="{% url 'subjects' %}" class="tab-item {% if request.resolver_match.url_name == 'subjects' %}active{% endif %}">
+                대상자현황
+            </a>
+            <a href="{% url 'devices' %}" class="tab-item {% if request.resolver_match.url_name == 'devices' %}active{% endif %}">
+                대상자 관리
+            </a>
+        </nav>
+        {% endif %}
+
+        <!-- Content -->
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2025 MyHealth Partner. All rights reserved.</p>
+        <p>
+            <a href="{% url 'terms' %}">이용약관</a> |
+            <a href="{% url 'privacy' %}">개인정보 처리방침</a>
+        </p>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

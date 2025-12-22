@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>활동 대시보드 - myhealthpartner.app</title>
+    <!-- Chart.js 라이브러리 로드 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        body { 
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f7f9fc;
+            color: #333;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        h1 {
+            font-size: 28px;
+            color: #00B0B9;
+        }
+        .card {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 22px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-top: 0;
+        }
+        /* ★★★★★ 수정된 부분: 요약 카드 스타일 추가 ★★★★★ */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .summary-card {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .summary-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #00B0B9;
+        }
+        .summary-card .label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f8f8;
+            font-weight: 500;
+        }
+        .footer-links {
+            text-align: center;
+        }
+        .footer-links a {
+            display: inline-block;
+            margin: 20px 10px 0 10px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 20px;
+            transition: background-color 0.3s ease;
+        }
+        .home-link {
+            background-color: #007bff;
+        }
+        .home-link:hover {
+            background-color: #0056b3;
+        }
+        .logout-link {
+            background-color: #6c757d;
+        }
+        .logout-link:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>활동 대시보드</h1>
+            <p>지난 7일간의 활동 기록입니다.</p>
+        </div>
+
+        <!-- ★★★★★ 수정된 부분: 요약 카드 섹션 추가 ★★★★★ -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="value">{{ avg_steps|floatformat:0 }}</div>
+                <div class="label">7일 평균 걸음 수</div>
+            </div>
+            <div class="summary-card">
+                <div class="value">{% if avg_resting_hr %}{{ avg_resting_hr|floatformat:0 }}{% else %}N/A{% endif %}</div>
+                <div class="label">7일 평균 안정 시 심박수</div>
+            </div>
+            <div class="summary-card">
+                <div class="value">{{ avg_exercise_minutes|floatformat:0 }}</div>
+                <div class="label">7일 평균 운동 시간(분)</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>걸음 수 변화</h2>
+            <canvas id="stepsChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>심박수 구간별 운동 시간 (분)</h2>
+            <canvas id="heartRateChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>상세 데이터</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th>걸음 수</th>
+                        <th>안정 시 심박수</th>
+                        <th>지방 연소 (분)</th>
+                        <th>심장 강화 (분)</th>
+                        <th>최대 구간 (분)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in summary_data %}
+                    <tr>
+                        <td>{{ row.date|date:"m-d" }}</td>
+                        <td>{% if row.steps %}{{ row.steps }}{% else %}N/A{% endif %}</td>
+                        <td>{% if row.resting_heart_rate %}{{ row.resting_heart_rate }}{% else %}N/A{% endif %}</td>
+                        <td>{% if row.hr_zone_fat_burn_minutes %}{{ row.hr_zone_fat_burn_minutes }}{% else %}0{% endif %}</td>
+                        <td>{% if row.hr_zone_cardio_minutes %}{{ row.hr_zone_cardio_minutes }}{% else %}0{% endif %}</td>
+                        <td>{% if row.hr_zone_peak_minutes %}{{ row.hr_zone_peak_minutes }}{% else %}0{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center;">아직 수집된 데이터가 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="footer-links">
+            <a href="{% url 'home' %}" class="home-link">메인 화면으로 돌아가기</a>
+            <a href="{% url 'logout' %}" class="logout-link">로그아웃</a>
+        </div>
+    </div>
+
+    <script>
+        // Django에서 전달받은 데이터를 JavaScript 변수로 변환
+        const summaryData = [
+            {% for row in summary_data %}
+            {
+                date: '{{ row.date|date:"Y-m-d" }}',
+                steps: {{ row.steps|default:0 }},
+                resting_heart_rate: {{ row.resting_heart_rate|default:0 }},
+                hr_zone_fat_burn_minutes: {{ row.hr_zone_fat_burn_minutes|default:0 }},
+                hr_zone_cardio_minutes: {{ row.hr_zone_cardio_minutes|default:0 }},
+                hr_zone_peak_minutes: {{ row.hr_zone_peak_minutes|default:0 }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        const reversedData = [...summaryData].reverse();
+        
+        // 공통 라벨 (날짜)
+        const labels = reversedData.map(item => new Date(item.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }));
+
+        // --- 1. 걸음 수 차트 (Line Chart) ---
+        const stepsData = reversedData.map(item => item.steps);
+        const stepsChartCtx = document.getElementById('stepsChart').getContext('2d');
+        new Chart(stepsChartCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '걸음 수',
+                    backgroundColor: 'rgba(0, 176, 185, 0.2)',
+                    borderColor: 'rgba(0, 176, 185, 1)',
+                    borderWidth: 2,
+                    data: stepsData,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // --- 2. 심박수 구간 차트 (Stacked Bar Chart) ---
+        const fatBurnData = reversedData.map(item => item.hr_zone_fat_burn_minutes || 0);
+        const cardioData = reversedData.map(item => item.hr_zone_cardio_minutes || 0);
+        const peakData = reversedData.map(item => item.hr_zone_peak_minutes || 0);
+        
+        const heartRateChartCtx = document.getElementById('heartRateChart').getContext('2d');
+        new Chart(heartRateChartCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '지방 연소',
+                        data: fatBurnData,
+                        backgroundColor: 'rgba(255, 193, 7, 0.7)', // Yellow
+                    },
+                    {
+                        label: '심장 강화',
+                        data: cardioData,
+                        backgroundColor: 'rgba(253, 126, 20, 0.7)', // Orange
+                    },
+                    {
+                        label: '최대 구간',
+                        data: peakData,
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)', // Red
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { stacked: true },
+                    y: { 
+                        stacked: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '시간 (분)'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        mode: 'index'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

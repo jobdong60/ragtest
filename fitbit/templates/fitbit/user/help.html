@@ -1,0 +1,138 @@
+{% extends 'user/base.html' %}
+
+{% block title %}도움말 - MyHealth Partner{% endblock %}
+
+{% block content %}
+<div class="page-title">도움말</div>
+<div class="page-subtitle">MyHealth Partner 사용 가이드</div>
+
+<!-- FAQ -->
+<div class="card">
+    <div class="card-title">자주 묻는 질문 (FAQ)</div>
+
+    <div style="margin-bottom: 20px;">
+        <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 16px;">
+            Q. Fitbit 계정은 어떻게 연동하나요?
+        </div>
+        <div style="color: #666; line-height: 1.6; padding-left: 15px; border-left: 3px solid #667eea;">
+            '기기 등록 관리' 탭에서 'Fitbit 계정 연동하기' 버튼을 클릭하세요.
+            Fitbit 로그인 페이지로 이동하며, 로그인 후 자동으로 데이터가 동기화됩니다.
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 16px;">
+            Q. 데이터는 얼마나 자주 업데이트되나요?
+        </div>
+        <div style="color: #666; line-height: 1.6; padding-left: 15px; border-left: 3px solid #667eea;">
+            자동 동기화는 5분마다 실행됩니다.
+            수동으로 동기화하려면 '데이터 동기화' 버튼을 클릭하세요.
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 16px;">
+            Q. 어떤 데이터를 수집하나요?
+        </div>
+        <div style="color: #666; line-height: 1.6; padding-left: 15px; border-left: 3px solid #667eea;">
+            다음 데이터를 수집합니다:<br>
+            • 일일 활동 요약 (걸음 수, 거리, 칼로리)<br>
+            • 안정 시 심박수<br>
+            • 1분 단위 심박수 데이터<br>
+            • 5분 단위 걸음 수 및 칼로리 데이터
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 16px;">
+            Q. 데이터는 안전하게 보관되나요?
+        </div>
+        <div style="color: #666; line-height: 1.6; padding-left: 15px; border-left: 3px solid #667eea;">
+            네, 모든 데이터는 암호화되어 안전한 PostgreSQL 데이터베이스에 저장됩니다.
+            개인정보 보호 정책에 따라 관리됩니다.
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <div style="font-weight: 600; color: #333; margin-bottom: 8px; font-size: 16px;">
+            Q. Fitbit 기기가 없어도 사용할 수 있나요?
+        </div>
+        <div style="color: #666; line-height: 1.6; padding-left: 15px; border-left: 3px solid #667eea;">
+            아니요, Fitbit 계정과 기기가 필요합니다.
+            Fitbit 앱으로 수동 입력한 데이터도 동기화됩니다.
+        </div>
+    </div>
+</div>
+
+<!-- 시스템 정보 -->
+<div class="card">
+    <div class="card-title">시스템 정보</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <div style="color: #999; font-size: 13px; margin-bottom: 5px;">API 버전</div>
+            <div style="font-weight: 600; color: #333;">Fitbit Web API v1.2</div>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <div style="color: #999; font-size: 13px; margin-bottom: 5px;">동기화 주기</div>
+            <div style="font-weight: 600; color: #333;">5분마다 자동 실행</div>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <div style="color: #999; font-size: 13px; margin-bottom: 5px;">데이터 저장 기간</div>
+            <div style="font-weight: 600; color: #333;">무제한 (영구 보관)</div>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <div style="color: #999; font-size: 13px; margin-bottom: 5px;">지원 타임존</div>
+            <div style="font-weight: 600; color: #333;">UTC → KST 자동 변환</div>
+        </div>
+    </div>
+</div>
+
+<!-- 문제 해결 -->
+<div class="card">
+    <div class="card-title">문제 해결</div>
+
+    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 15px;">
+        <div style="font-weight: 600; color: #856404; margin-bottom: 5px;">⚠ 데이터가 동기화되지 않아요</div>
+        <div style="color: #856404; font-size: 14px;">
+            1. Fitbit 계정 연동 상태를 확인하세요.<br>
+            2. '데이터 동기화' 버튼을 직접 클릭해보세요.<br>
+            3. 로그아웃 후 다시 로그인해보세요.
+        </div>
+    </div>
+
+    <div style="background: #f8d7da; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545; margin-bottom: 15px;">
+        <div style="font-weight: 600; color: #721c24; margin-bottom: 5px;">❌ 로그인이 안 돼요</div>
+        <div style="color: #721c24; font-size: 14px;">
+            1. Fitbit 계정 아이디/비밀번호를 확인하세요.<br>
+            2. 브라우저 쿠키 설정을 확인하세요.<br>
+            3. 캐시를 삭제하고 다시 시도해보세요.
+        </div>
+    </div>
+
+    <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+        <div style="font-weight: 600; color: #0c5460; margin-bottom: 5px;">ℹ 데이터가 부정확해요</div>
+        <div style="color: #0c5460; font-size: 14px;">
+            1. Fitbit 기기가 제대로 착용되어 있는지 확인하세요.<br>
+            2. Fitbit 앱과 기기가 동기화되어 있는지 확인하세요.<br>
+            3. 최소 24시간 후 데이터를 다시 확인해보세요.
+        </div>
+    </div>
+</div>
+
+<!-- 연락처 -->
+<div class="card">
+    <div class="card-title">문의하기</div>
+    <div style="line-height: 1.8; color: #666;">
+        추가 문의사항이나 기술 지원이 필요하신 경우:<br>
+        <strong style="color: #333;">이메일:</strong> support@myhealthpartner.app<br>
+        <strong style="color: #333;">운영시간:</strong> 평일 09:00 - 18:00 (KST)
+    </div>
+</div>
+
+<!-- 관련 링크 -->
+<div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <a href="{% url 'terms' %}" class="btn btn-secondary">이용약관</a>
+    <a href="{% url 'privacy' %}" class="btn btn-secondary">개인정보 처리방침</a>
+    <a href="https://dev.fitbit.com" target="_blank" class="btn btn-primary">Fitbit 개발자 문서</a>
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'user/base.html' %}
+
+{% block title %}기기 등록 관리 - MyHealth Partner{% endblock %}
+
+{% block content %}
+<div class="page-title">기기 등록 관리</div>
+<div class="page-subtitle">Fitbit 기기 연동 및 관리</div>
+
+<!-- 현재 연동 상태 -->
+<div class="card">
+    <div class="card-title">연동 상태</div>
+
+    {% if request.session.user_id %}
+    <div style="display: flex; align-items: center; gap: 15px; padding: 20px; background: #e8f5e9; border-radius: 8px; margin-bottom: 20px;">
+        <div style="width: 50px; height: 50px; background: #4caf50; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+            ✓
+        </div>
+        <div>
+            <div style="font-weight: 600; color: #2e7d32; font-size: 16px;">Fitbit 계정 연동됨</div>
+            <div style="color: #558b2f; font-size: 14px; margin-top: 3px;">사용자 ID: {{ request.session.user_id }}</div>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-success" onclick="syncData()">데이터 동기화</button>
+        <a href="{% url 'logout' %}" class="btn btn-secondary">연동 해제</a>
+    </div>
+    {% else %}
+    <div style="display: flex; align-items: center; gap: 15px; padding: 20px; background: #fff3e0; border-radius: 8px; margin-bottom: 20px;">
+        <div style="width: 50px; height: 50px; background: #ff9800; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+            !
+        </div>
+        <div>
+            <div style="font-weight: 600; color: #e65100; font-size: 16px;">Fitbit 계정이 연동되지 않음</div>
+            <div style="color: #ef6c00; font-size: 14px; margin-top: 3px;">아래 버튼을 클릭하여 Fitbit 계정을 연동하세요.</div>
+        </div>
+    </div>
+
+    <a href="{% url 'login' %}" class="btn btn-primary">Fitbit 계정 연동하기</a>
+    {% endif %}
+</div>
+
+<!-- 지원 기기 목록 -->
+<div class="card">
+    <div class="card-title">지원 Fitbit 기기</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+        <div style="padding: 15px; background: white; border: 2px solid #e9ecef; border-radius: 8px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">⌚</div>
+            <div style="font-weight: 600; color: #333;">Fitbit Versa</div>
+            <div style="font-size: 12px; color: #999; margin-top: 5px;">Series 1, 2, 3, 4</div>
+        </div>
+        <div style="padding: 15px; background: white; border: 2px solid #e9ecef; border-radius: 8px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">⌚</div>
+            <div style="font-weight: 600; color: #333;">Fitbit Sense</div>
+            <div style="font-size: 12px; color: #999; margin-top: 5px;">Series 1, 2</div>
+        </div>
+        <div style="padding: 15px; background: white; border: 2px solid #e9ecef; border-radius: 8px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">⌚</div>
+            <div style="font-weight: 600; color: #333;">Fitbit Charge</div>
+            <div style="font-size: 12px; color: #999; margin-top: 5px;">Series 3, 4, 5, 6</div>
+        </div>
+        <div style="padding: 15px; background: white; border: 2px solid #e9ecef; border-radius: 8px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">📱</div>
+            <div style="font-weight: 600; color: #333;">Fitbit Luxe</div>
+            <div style="font-size: 12px; color: #999; margin-top: 5px;">최신 버전</div>
+        </div>
+        <div style="padding: 15px; background: white; border: 2px solid #e9ecef; border-radius: 8px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">⌚</div>
+            <div style="font-weight: 600; color: #333;">Fitbit Inspire</div>
+            <div style="font-size: 12px; color: #999; margin-top: 5px;">Series 2, 3</div>
+        </div>
+        <div style="padding: 15px; background: white; border: 2px solid #e9ecef; border-radius: 8px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">⌚</div>
+            <div style="font-weight: 600; color: #333;">기타 모든 기기</div>
+            <div style="font-size: 12px; color: #999; margin-top: 5px;">Fitbit API 지원</div>
+        </div>
+    </div>
+</div>
+
+<!-- 동기화 정보 -->
+<div class="card">
+    <div class="card-title">자동 동기화 설정</div>
+    <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; border-left: 4px solid #2196f3;">
+        <div style="font-weight: 600; color: #1565c0; margin-bottom: 10px;">✓ 자동 동기화 활성화</div>
+        <div style="color: #1976d2; font-size: 14px; line-height: 1.6;">
+            • 5분마다 자동으로 Fitbit 데이터를 가져옵니다.<br>
+            • 심박수, 걸음 수, 칼로리 데이터가 실시간으로 업데이트됩니다.<br>
+            • 별도의 작업 없이 자동으로 동기화됩니다.
+        </div>
+    </div>
+</div>
+
+<script>
+function syncData() {
+    if (confirm('데이터를 동기화하시겠습니까?')) {
+        window.location.href = '{% url "sync_data" %}';
+    }
+}
+</script>
+{% endblock %}

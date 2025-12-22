@@ -1,0 +1,102 @@
+{% extends 'user/base.html' %}
+
+{% block title %}홈 - MyHealth Partner{% endblock %}
+
+{% block content %}
+<div class="page-title">대시보드</div>
+<div class="page-subtitle">Fitbit 데이터 개요</div>
+
+{% if not request.session.user_id %}
+<div class="card" style="text-align: center; padding: 60px 20px; position: relative;">
+    <h2 style="color: #667eea; margin-bottom: 20px;">환영합니다!</h2>
+    <p style="color: #666; margin-bottom: 30px;">
+        Fitbit 계정으로 로그인하여<br>
+        당신의 활동 데이터를 확인해보세요.
+    </p>
+    <a href="{% url 'login' %}" class="btn btn-primary">Fitbit으로 로그인</a>
+
+    <!-- Admin 로그인 버튼 -->
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+        <a href="{% url 'admin_login' %}"
+           style="color: #666; font-size: 14px; text-decoration: none; display: inline-block; padding: 10px 20px; border: 1px solid #ddd; border-radius: 8px; transition: all 0.3s; background: #f8f9fa;">
+            🔐 관리자 로그인
+        </a>
+    </div>
+
+    <style>
+        a[href*="admin_login"]:hover {
+            color: white !important;
+            background: #e74c3c !important;
+            border-color: #e74c3c !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+    </style>
+</div>
+{% else %}
+
+<!-- 요약 카드 -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px;">
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">오늘의 걸음 수</div>
+        <div style="font-size: 32px; font-weight: 700;">
+            {% if activity_data %}{{ activity_data.summary.steps|floatformat:0 }}{% else %}0{% endif %}
+        </div>
+        <div style="font-size: 13px; opacity: 0.8; margin-top: 5px;">걸음</div>
+    </div>
+
+    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 25px; border-radius: 12px;">
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">소모 칼로리</div>
+        <div style="font-size: 32px; font-weight: 700;">
+            {% if activity_data %}{{ activity_data.summary.caloriesOut|floatformat:0 }}{% else %}0{% endif %}
+        </div>
+        <div style="font-size: 13px; opacity: 0.8; margin-top: 5px;">kcal</div>
+    </div>
+
+    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 25px; border-radius: 12px;">
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">안정 시 심박수</div>
+        <div style="font-size: 32px; font-weight: 700;">
+            {% if activity_data.summary.restingHeartRate %}{{ activity_data.summary.restingHeartRate }}{% else %}-{% endif %}
+        </div>
+        <div style="font-size: 13px; opacity: 0.8; margin-top: 5px;">bpm</div>
+    </div>
+
+    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 25px; border-radius: 12px;">
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">이동 거리</div>
+        <div style="font-size: 32px; font-weight: 700;">
+            {% if activity_data %}{{ activity_data.summary.distances.0.distance|floatformat:2 }}{% else %}0{% endif %}
+        </div>
+        <div style="font-size: 13px; opacity: 0.8; margin-top: 5px;">km</div>
+    </div>
+</div>
+
+<!-- 프로필 정보 -->
+{% if profile_data %}
+<div class="card">
+    <div class="card-title">프로필 정보</div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <img src="{{ profile_data.user.avatar150 }}" alt="Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #667eea;">
+        <div>
+            <div style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 5px;">
+                {{ profile_data.user.fullName }}
+            </div>
+            <div style="color: #666; font-size: 14px;">
+                가입일: {{ profile_data.user.memberSince }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 빠른 작업 -->
+<div class="card">
+    <div class="card-title">빠른 작업</div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="{% url 'sync_data' %}" class="btn btn-success">데이터 동기화</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-primary">상세 대시보드</a>
+        <a href="{% url 'subjects' %}" class="btn btn-secondary">대상자 보기</a>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'user/base.html' %}
+
+{% block title %}대상자 현황 - MyHealth Partner{% endblock %}
+
+{% block content %}
+<div class="page-title">대상자 현황</div>
+<div class="page-subtitle">전체 Fitbit 사용자 목록 및 데이터 현황</div>
+
+<!-- 전체 통계 -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+    <div class="card" style="text-align: center;">
+        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">총 대상자 수</div>
+        <div style="font-size: 36px; font-weight: 700; color: #667eea;">{{ total_users }}</div>
+    </div>
+    <div class="card" style="text-align: center;">
+        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">평균 걸음 수</div>
+        <div style="font-size: 36px; font-weight: 700; color: #764ba2;">{{ global_avg_steps }}</div>
+    </div>
+    <div class="card" style="text-align: center;">
+        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">평균 심박수</div>
+        <div style="font-size: 36px; font-weight: 700; color: #f5576c;">{{ global_avg_hr }}</div>
+    </div>
+    <div class="card" style="text-align: center;">
+        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">총 데이터 레코드</div>
+        <div style="font-size: 36px; font-weight: 700; color: #43e97b;">{{ total_records }}</div>
+    </div>
+</div>
+
+<!-- 대상자 목록 -->
+<div class="card">
+    <div class="card-title">대상자 목록</div>
+
+    {% if user_stats %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Fitbit ID</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">사용자명</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #495057;">평균 걸음 수</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #495057;">평균 심박수</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #495057;">데이터 일수</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #495057;">최근 동기화</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #495057;">권한</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in user_stats %}
+                <tr style="border-bottom: 1px solid #e9ecef;">
+                    <td style="padding: 12px; color: #495057;">{{ user.fitbit_user_id }}</td>
+                    <td style="padding: 12px; color: #495057; font-weight: 500;">{{ user.username }}</td>
+                    <td style="padding: 12px; text-align: center; color: #667eea; font-weight: 600;">{{ user.avg_steps }}</td>
+                    <td style="padding: 12px; text-align: center; color: #f5576c; font-weight: 600;">{{ user.avg_hr }} bpm</td>
+                    <td style="padding: 12px; text-align: center; color: #495057;">{{ user.total_days }}일</td>
+                    <td style="padding: 12px; text-align: center; color: #495057;">{{ user.last_sync }}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        {% if user.is_staff %}
+                        <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500;">관리자</span>
+                        {% else %}
+                        <span style="background: #e9ecef; color: #6c757d; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500;">일반</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px 20px; color: #999;">
+        등록된 대상자가 없습니다.
+    </div>
+    {% endif %}
+</div>
+
+<!-- 액션 버튼 -->
+<div style="margin-top: 20px; display: flex; gap: 10px;">
+    <button onclick="location.reload()" class="btn btn-primary">새로고침</button>
+    <a href="{% url 'sync_data' %}" class="btn btn-success">전체 데이터 동기화</a>
+</div>
+{% endblock %}

@@ -1,0 +1,412 @@
+{% extends "fitbit/admin/base.html" %}
+{% load static %}
+
+{% block title %}심박수 상세 분석{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- 페이지 헤더 -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h1 class="text-2xl font-bold text-gray-800">심박수 상세 분석 (Polar)</h1>
+        <p class="text-gray-600 mt-2">Polar 개인별 심박수 및 RR 간격 데이터를 조회합니다.</p>
+    </div>
+
+    <!-- 사용자 검색 및 날짜 선택 -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+            <!-- 대상자 선택 -->
+            <div>
+                <label for="polar-user-select" class="block text-sm font-medium text-gray-700 mb-2">대상자 선택</label>
+                <select id="polar-user-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- 대상자를 선택하세요 --</option>
+                    {% for user in users %}
+                    <option value="{{ user.username }}" data-dob="{% if user.date_of_birth %}{{ user.date_of_birth|date:'Y-m-d' }}{% endif %}">
+                        {{ user.full_name }} ({{ user.username }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 날짜 선택 -->
+            <div>
+                <label for="polar-datePicker" class="block text-sm font-medium text-gray-700 mb-2">날짜 선택</label>
+                <input type="text" id="polar-datePicker" placeholder="날짜를 선택하세요" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- 변수 선택 (우측 Y축) -->
+            <div>
+                <label for="variable-select" class="block text-sm font-medium text-gray-700 mb-2">비교 변수 선택</label>
+                <select id="variable-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="mean_rr">평균 RR 간격 (ms)</option>
+                    <option value="rmssd">RMSSD (ms)</option>
+                    <option value="sdnn">SDNN (ms)</option>
+                    <option value="hf_power">HF Power (ms²)</option>
+                    <option value="lf_power">LF Power (ms²)</option>
+                    <option value="lf_hf_ratio">LF/HF Ratio</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- 조회 버튼 -->
+        <div class="mt-4">
+            <button id="load-hrv-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                <span id="load-btn-text">HRV 데이터 조회</span>
+                <span id="load-spinner" class="hidden ml-2">
+                    <svg class="animate-spin inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <!-- HRV 그래프 -->
+    <div id="hrv-chart-container" class="bg-white rounded-lg shadow-sm p-6 hidden">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">HRV Index (5분 단위)</h2>
+        
+        <!-- 통계 정보 -->
+        <div id="hrv-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <!-- 통계 카드들이 여기에 동적으로 추가됩니다 -->
+        </div>
+        
+        <!-- 그래프 -->
+        <div class="relative" style="height: 400px;">
+            <canvas id="hrv-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- 에러 메시지 -->
+    <div id="error-message" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg hidden">
+        <p id="error-text"></p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let hrvChart = null;
+    let currentChartData = null;
+    let currentStats = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const userSelect = document.getElementById('polar-user-select');
+        const datePicker = document.getElementById('polar-datePicker');
+        const loadBtn = document.getElementById('load-hrv-btn');
+        const variableSelect = document.getElementById('variable-select');
+        const chartContainer = document.getElementById('hrv-chart-container');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+
+        // 날짜 선택기 초기화
+        flatpickr("#polar-datePicker", {
+            mode: "single",
+            locale: "ko",
+            dateFormat: "Y-m-d",
+            maxDate: "today",
+            defaultDate: today,
+        });
+
+        // 변수 선택 변경 시 차트 업데이트
+        variableSelect.addEventListener('change', function() {
+            if (currentChartData && currentStats) {
+                const selectedVariable = variableSelect.value;
+                displayStats(currentStats, selectedVariable);
+                displayChart(currentChartData, selectedVariable);
+            }
+        });
+
+        // HRV 데이터 조회 버튼
+        loadBtn.addEventListener('click', async function() {
+            const username = userSelect.value;
+            const selectedOption = userSelect.options[userSelect.selectedIndex];
+            const dateOfBirth = selectedOption.dataset.dob;
+            const selectedDate = datePicker.value;
+
+            // 유효성 검사
+            if (!username || !dateOfBirth || !selectedDate) {
+                showError('대상자와 날짜를 선택해주세요.');
+                return;
+            }
+
+            // 로딩 상태
+            setLoading(true);
+            hideError();
+            chartContainer.classList.add('hidden');
+
+            try {
+                const response = await fetch(`/manager/polar/hrv-index/?username=${username}&date_of_birth=${dateOfBirth}&date=${selectedDate}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    showError(data.message || 'HRV 데이터를 불러오는데 실패했습니다.');
+                    return;
+                }
+
+                // 데이터가 없는 경우
+                if (!data.chart_data.labels || data.chart_data.labels.length === 0) {
+                    showError('선택한 날짜에 HRV 데이터가 없습니다.');
+                    return;
+                }
+
+                // 데이터 저장
+                currentChartData = data.chart_data;
+                currentStats = data.stats;
+
+                // 선택된 변수
+                const selectedVariable = variableSelect.value;
+
+                // 통계 표시
+                displayStats(currentStats, selectedVariable);
+
+                // 차트 표시
+                displayChart(currentChartData, selectedVariable);
+
+                chartContainer.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError('서버 오류가 발생했습니다.');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function setLoading(isLoading) {
+            const btnText = document.getElementById('load-btn-text');
+            const spinner = document.getElementById('load-spinner');
+            
+            if (isLoading) {
+                btnText.textContent = '조회 중...';
+                spinner.classList.remove('hidden');
+                loadBtn.disabled = true;
+            } else {
+                btnText.textContent = 'HRV 데이터 조회';
+                spinner.classList.add('hidden');
+                loadBtn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        function displayStats(stats, selectedVariable) {
+            const variableLabels = {
+                'mean_rr': '평균 RR',
+                'rmssd': 'RMSSD',
+                'sdnn': 'SDNN',
+                'hf_power': 'HF Power',
+                'lf_power': 'LF Power',
+                'lf_hf_ratio': 'LF/HF Ratio'
+            };
+            
+            const variableValue = selectedVariable === 'mean_rr' ? stats.avg_mean_rr :
+                                 selectedVariable === 'rmssd' ? stats.avg_rmssd : 
+                                 selectedVariable === 'sdnn' ? stats.avg_sdnn : 
+                                 selectedVariable === 'hf_power' ? stats.avg_hf_power :
+                                 selectedVariable === 'lf_power' ? stats.avg_lf_power :
+                                 selectedVariable === 'lf_hf_ratio' ? stats.avg_lf_hf_ratio :
+                                 'N/A';
+            
+            const statsContainer = document.getElementById('hrv-stats');
+            statsContainer.innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">평균 HR</div>
+                    <div class="text-2xl font-bold text-blue-600">${stats.avg_mean_hr || 0} bpm</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">평균 ${variableLabels[selectedVariable]}</div>
+                    <div class="text-2xl font-bold text-green-600">${variableValue || 0}</div>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">HR 범위</div>
+                    <div class="text-lg font-bold text-purple-600">${stats.min_mean_hr || 0} - ${stats.max_mean_hr || 0}</div>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">데이터 포인트</div>
+                    <div class="text-2xl font-bold text-orange-600">${stats.data_points || 0}개</div>
+                </div>
+            `;
+        }
+
+        function displayChart(chartData, selectedVariable) {
+            const ctx = document.getElementById('hrv-chart').getContext('2d');
+
+            // 기존 차트 삭제
+            if (hrvChart) {
+                hrvChart.destroy();
+            }
+
+            // 변수 정보 매핑
+            const variableInfo = {
+                'mean_rr': { label: '평균 RR 간격 (ms)', data: chartData.mean_rr_data, unit: 'ms' },
+                'rmssd': { label: 'RMSSD (ms)', data: chartData.rmssd_data, unit: 'ms' },
+                'sdnn': { label: 'SDNN (ms)', data: chartData.sdnn_data, unit: 'ms' },
+                'hf_power': { label: 'HF Power (ms²)', data: chartData.hf_power_data, unit: 'ms²' },
+                'lf_power': { label: 'LF Power (ms²)', data: chartData.lf_power_data, unit: 'ms²' },
+                'lf_hf_ratio': { label: 'LF/HF Ratio', data: chartData.lf_hf_ratio_data, unit: '' }
+            };
+
+            const varInfo = variableInfo[selectedVariable];
+
+            // 새 차트 생성
+            hrvChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        // HR 95% CI 상한선 (투명, fill 기준점)
+                        {
+                            label: 'HR Upper (95% CI)',
+                            data: chartData.hr_upper_data,
+                            borderColor: 'transparent',
+                            backgroundColor: 'transparent',
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        // HR 평균선
+                        {
+                            label: '평균 HR (bpm)',
+                            data: chartData.mean_hr_data,
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            yAxisID: 'y',
+                            tension: 0.3,
+                            borderWidth: 2,
+                            fill: {
+                                target: 0, // hr_upper_data (index 0)
+                                above: 'rgba(59, 130, 246, 0.15)',
+                                below: 'rgba(59, 130, 246, 0.15)'
+                            }
+                        },
+                        // HR 95% CI 하한선 (투명, fill)
+                        {
+                            label: 'HR Lower (95% CI)',
+                            data: chartData.hr_lower_data,
+                            borderColor: 'transparent',
+                            backgroundColor: 'transparent',
+                            yAxisID: 'y',
+                            pointRadius: 0,
+                            fill: {
+                                target: 1, // mean_hr_data (index 1)
+                                above: 'rgba(59, 130, 246, 0.15)',
+                                below: 'rgba(59, 130, 246, 0.15)'
+                            }
+                        },
+                        // 선택된 변수
+                        {
+                            label: varInfo.label,
+                            data: varInfo.data,
+                            borderColor: 'rgb(16, 185, 129)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            yAxisID: 'y1',
+                            tension: 0.3,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                filter: function(item, chart) {
+                                    // HR Upper/Lower CI는 범례에서 숨김
+                                    return !item.text.includes('95% CI');
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    // HR Upper/Lower CI는 툴팁에서 숨김
+                                    if (context.dataset.label.includes('95% CI')) {
+                                        return null;
+                                    }
+                                    
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(1);
+                                        
+                                        // 단위 추가
+                                        if (label.includes('HR')) {
+                                            label += ' bpm';
+                                        } else if (label.includes('RMSSD') || label.includes('SDNN')) {
+                                            label += ' ms';
+                                        } else if (label.includes('Power')) {
+                                            label += ' ms²';
+                                        }
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '시간'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'HR (bpm)',
+                                color: 'rgb(59, 130, 246)'
+                            },
+                            ticks: {
+                                color: 'rgb(59, 130, 246)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: varInfo.label,
+                                color: 'rgb(16, 185, 129)'
+                            },
+                            ticks: {
+                                color: 'rgb(16, 185, 129)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,525 @@
+{% extends "fitbit/admin/base.html" %}
+{% load static %}
+
+{% block title %}대상자 실시간 모니터링{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    .search-result-item:hover {
+        background-color: #f3f4f6;
+        cursor: pointer;
+    }
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    .status-active { background-color: #10b981; }
+    .status-inactive { background-color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- 페이지 헤더 -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h1 class="text-2xl font-bold text-gray-800">대상자 실시간 모니터링 (Polar)</h1>
+        <p class="text-gray-600 mt-2">Polar 기기 HR/RR 데이터 실시간 스트리밍</p>
+    </div>
+
+    <!-- 사용자 검색 -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">대상자 검색</label>
+                <div class="relative">
+                    <input
+                        type="text"
+                        id="userSearchInput"
+                        placeholder="이름을 입력하세요..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autocomplete="off"
+                    >
+                    <!-- 검색 결과 드롭다운 -->
+                    <div id="searchResults" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 선택된 사용자 정보 -->
+            <div id="selectedUserInfo" class="hidden border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800" id="selectedUserName"></h3>
+                        <p class="text-sm text-gray-600">
+                            <span id="selectedUserGender"></span> |
+                            <span id="selectedUserBirth"></span>
+                        </p>
+                    </div>
+                    <button onclick="clearSelection()" class="text-red-600 hover:text-red-800">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 실시간 데이터 스트리밍 -->
+    <div id="streamingSection" class="hidden space-y-6">
+        <!-- 스트리밍 컨트롤 -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <span class="status-indicator" id="streamStatus"></span>
+                        <span class="text-sm font-medium text-gray-700" id="streamStatusText">대기 중</span>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        총 데이터: <span id="totalDataCount" class="font-semibold">0</span>개
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        신규: <span id="newDataCount" class="font-semibold text-green-600">0</span>개
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-gray-700">초기 표시:</label>
+                    <select id="initialTimeRange" class="px-3 py-1 border border-gray-300 rounded-lg text-sm">
+                        <option value="1">최근 1분</option>
+                        <option value="5" selected>최근 5분</option>
+                        <option value="10">최근 10분</option>
+                        <option value="15">최근 15분</option>
+                    </select>
+                    <button
+                        id="streamToggleBtn"
+                        onclick="toggleStreaming()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        스트리밍 시작
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 실시간 차트 -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">실시간 HR / RR 데이터</h2>
+            <div class="relative" style="height: 400px;">
+                <canvas id="realtimeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 현재 값 표시 -->
+        <div class="grid grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">현재 심박수</p>
+                        <p class="text-4xl font-bold text-red-600 mt-2"><span id="currentHR">--</span> <span class="text-lg text-gray-600">bpm</span></p>
+                    </div>
+                    <div class="bg-red-100 rounded-full p-4">
+                        <svg class="w-12 h-12 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">현재 RR 간격</p>
+                        <p class="text-4xl font-bold text-blue-600 mt-2"><span id="currentRR">--</span> <span class="text-lg text-gray-600">ms</span></p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-4">
+                        <svg class="w-12 h-12 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedUser = null;
+let isStreaming = false;
+let streamingInterval = null;
+let realtimeChart = null;
+let lastTimestamp = null;  // 마지막 데이터 타임스탬프
+let totalCount = 0;
+
+// 사용자 검색
+let searchTimeout;
+document.getElementById('userSearchInput').addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+
+    if (query.length < 2) {
+        document.getElementById('searchResults').classList.add('hidden');
+        return;
+    }
+
+    searchTimeout = setTimeout(() => {
+        fetch(`/manager/polar/search-users/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.users.length > 0) {
+                    displaySearchResults(data.users);
+                } else {
+                    document.getElementById('searchResults').innerHTML = '<div class="p-4 text-gray-500 text-sm">검색 결과가 없습니다</div>';
+                    document.getElementById('searchResults').classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('검색 오류:', error);
+            });
+    }, 300);
+});
+
+// 검색 결과 표시
+function displaySearchResults(users) {
+    const resultsDiv = document.getElementById('searchResults');
+    resultsDiv.innerHTML = '';
+
+    users.forEach(user => {
+        const item = document.createElement('div');
+        item.className = 'search-result-item p-3 border-b border-gray-200 last:border-b-0';
+        item.innerHTML = `
+            <div class="font-medium text-gray-800">${user.full_name}</div>
+            <div class="text-sm text-gray-600">${user.username} | ${user.gender || '-'} | ${user.date_of_birth || '-'}</div>
+            <div class="text-xs text-gray-500">Device: ${user.polar_device_id || 'N/A'}</div>
+        `;
+        item.onclick = () => selectUser(user);
+        resultsDiv.appendChild(item);
+    });
+
+    resultsDiv.classList.remove('hidden');
+}
+
+// 사용자 선택
+function selectUser(user) {
+    selectedUser = user;
+
+    // 검색 결과 숨기기
+    document.getElementById('searchResults').classList.add('hidden');
+    document.getElementById('userSearchInput').value = user.full_name;
+
+    // 선택된 사용자 정보 표시
+    document.getElementById('selectedUserName').textContent = user.full_name;
+    document.getElementById('selectedUserGender').textContent = user.gender || '-';
+    document.getElementById('selectedUserBirth').textContent = user.date_of_birth || '-';
+    document.getElementById('selectedUserInfo').classList.remove('hidden');
+
+    // 스트리밍 섹션 표시
+    document.getElementById('streamingSection').classList.remove('hidden');
+
+    // 차트 초기화
+    initChart();
+}
+
+// 선택 해제
+function clearSelection() {
+    selectedUser = null;
+    lastTimestamp = null;
+    totalCount = 0;
+    stopStreaming();
+
+    document.getElementById('userSearchInput').value = '';
+    document.getElementById('selectedUserInfo').classList.add('hidden');
+    document.getElementById('streamingSection').classList.add('hidden');
+
+    if (realtimeChart) {
+        realtimeChart.destroy();
+        realtimeChart = null;
+    }
+}
+
+// 차트 초기화
+function initChart() {
+    const ctx = document.getElementById('realtimeChart').getContext('2d');
+
+    if (realtimeChart) {
+        realtimeChart.destroy();
+    }
+
+    realtimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'HR (bpm)',
+                    data: [],
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    yAxisID: 'y',
+                    tension: 0.4,
+                    pointRadius: 2
+                },
+                {
+                    label: 'RR (ms)',
+                    data: [],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    yAxisID: 'y1',
+                    tension: 0.4,
+                    pointRadius: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: '시간'
+                    },
+                    ticks: {
+                        maxTicksLimit: 15,
+                        autoSkip: true
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    min: 50,
+                    max: 180,
+                    title: {
+                        display: true,
+                        text: 'HR (bpm)',
+                        color: 'rgb(239, 68, 68)'
+                    },
+                    ticks: {
+                        color: 'rgb(239, 68, 68)',
+                        stepSize: 10
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    min: 300,
+                    max: 2000,
+                    title: {
+                        display: true,
+                        text: 'RR (ms)',
+                        color: 'rgb(59, 130, 246)'
+                    },
+                    ticks: {
+                        color: 'rgb(59, 130, 246)',
+                        stepSize: 200
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+// 스트리밍 토글
+function toggleStreaming() {
+    if (isStreaming) {
+        stopStreaming();
+    } else {
+        startStreaming();
+    }
+}
+
+// 스트리밍 시작
+function startStreaming() {
+    if (!selectedUser) {
+        alert('사용자를 먼저 선택해주세요');
+        return;
+    }
+
+    isStreaming = true;
+    lastTimestamp = null;  // 초기화
+    totalCount = 0;
+
+    document.getElementById('streamToggleBtn').textContent = '스트리밍 중지';
+    document.getElementById('streamToggleBtn').classList.remove('bg-blue-600', 'hover:bg-blue-700');
+    document.getElementById('streamToggleBtn').classList.add('bg-red-600', 'hover:bg-red-700');
+    document.getElementById('streamStatus').classList.remove('status-inactive');
+    document.getElementById('streamStatus').classList.add('status-active');
+    document.getElementById('streamStatusText').textContent = '스트리밍 중';
+
+    // 초기 데이터 로드
+    loadRealtimeData(true);
+
+    // 3초마다 신규 데이터 조회
+    streamingInterval = setInterval(() => loadRealtimeData(false), 3000);
+}
+
+// 스트리밍 중지
+function stopStreaming() {
+    isStreaming = false;
+
+    if (streamingInterval) {
+        clearInterval(streamingInterval);
+        streamingInterval = null;
+    }
+
+    document.getElementById('streamToggleBtn').textContent = '스트리밍 시작';
+    document.getElementById('streamToggleBtn').classList.remove('bg-red-600', 'hover:bg-red-700');
+    document.getElementById('streamToggleBtn').classList.add('bg-blue-600', 'hover:bg-blue-700');
+    document.getElementById('streamStatus').classList.remove('status-active');
+    document.getElementById('streamStatus').classList.add('status-inactive');
+    document.getElementById('streamStatusText').textContent = '대기 중';
+}
+
+// 실시간 데이터 로드
+function loadRealtimeData(isInitial) {
+    if (!selectedUser) return;
+
+    let url = `/manager/polar/realtime-data/?user_id=${selectedUser.id}`;
+
+    if (isInitial) {
+        // 초기 로드: 최근 N분 데이터
+        const initialMinutes = document.getElementById('initialTimeRange').value;
+        url += `&initial_minutes=${initialMinutes}`;
+        console.log('초기 로드:', url);
+    } else {
+        // 스트리밍: 마지막 타임스탬프 이후 데이터만
+        if (lastTimestamp) {
+            url += `&last_timestamp=${encodeURIComponent(lastTimestamp)}`;
+            console.log('스트리밍 조회:', url);
+        } else {
+            console.log('타임스탬프 없음, 스킵');
+            return;
+        }
+    }
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            console.log('응답:', data);
+            if (data.success) {
+                if (data.is_initial) {
+                    // 초기 로드: 차트 전체 교체
+                    console.log('초기 데이터 로드:', data.count, '개');
+                    replaceChartData(data.data);
+                    totalCount = data.count;
+                } else {
+                    // 스트리밍: 신규 데이터만 추가
+                    if (data.count > 0) {
+                        console.log('신규 데이터:', data.count, '개');
+                        appendChartData(data.data);
+                        totalCount += data.count;
+                        document.getElementById('newDataCount').textContent = data.count;
+
+                        // 1초 후 신규 카운트 초기화
+                        setTimeout(() => {
+                            document.getElementById('newDataCount').textContent = '0';
+                        }, 1000);
+                    } else {
+                        console.log('신규 데이터 없음');
+                    }
+                }
+
+                document.getElementById('totalDataCount').textContent = totalCount;
+
+                // 마지막 타임스탬프 업데이트
+                if (data.data.length > 0) {
+                    lastTimestamp = data.data[data.data.length - 1].timestamp;
+                    updateCurrentValues(data.data[data.data.length - 1]);
+                    console.log('마지막 타임스탬프 업데이트:', lastTimestamp);
+                }
+            } else {
+                console.error('데이터 로드 실패:', data.error);
+                alert('데이터 로드 실패: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('데이터 로드 오류:', error);
+            alert('데이터 로드 오류: ' + error);
+        });
+}
+
+// 차트 데이터 전체 교체 (초기 로드)
+function replaceChartData(dataPoints) {
+    if (!realtimeChart) return;
+
+    const labels = [];
+    const hrData = [];
+    const rrData = [];
+
+    dataPoints.forEach(point => {
+        const timestamp = new Date(point.timestamp);
+        const timeStr = timestamp.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        labels.push(timeStr);
+        hrData.push(point.hr);
+        rrData.push(point.rr);
+    });
+
+    realtimeChart.data.labels = labels;
+    realtimeChart.data.datasets[0].data = hrData;
+    realtimeChart.data.datasets[1].data = rrData;
+    realtimeChart.update();
+}
+
+// 차트 데이터 추가 (스트리밍)
+function appendChartData(dataPoints) {
+    if (!realtimeChart) return;
+
+    dataPoints.forEach(point => {
+        const timestamp = new Date(point.timestamp);
+        const timeStr = timestamp.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        realtimeChart.data.labels.push(timeStr);
+        realtimeChart.data.datasets[0].data.push(point.hr);
+        realtimeChart.data.datasets[1].data.push(point.rr);
+    });
+
+    // 최대 500개까지만 유지 (메모리 관리)
+    const maxDataPoints = 500;
+    if (realtimeChart.data.labels.length > maxDataPoints) {
+        const excess = realtimeChart.data.labels.length - maxDataPoints;
+        realtimeChart.data.labels.splice(0, excess);
+        realtimeChart.data.datasets[0].data.splice(0, excess);
+        realtimeChart.data.datasets[1].data.splice(0, excess);
+    }
+
+    realtimeChart.update('none'); // 애니메이션 없이 빠르게 업데이트
+}
+
+// 현재 값 업데이트
+function updateCurrentValues(latestPoint) {
+    document.getElementById('currentHR').textContent = latestPoint.hr || '--';
+    document.getElementById('currentRR').textContent = latestPoint.rr || '--';
+}
+
+// 페이지 로드 시
+document.addEventListener('DOMContentLoaded', function() {
+    // 초기 상태 설정
+    document.getElementById('streamStatus').classList.add('status-inactive');
+});
+
+// 페이지 떠날 때 스트리밍 중지
+window.addEventListener('beforeunload', function() {
+    stopStreaming();
+});
+</script>
+{% endblock %}
