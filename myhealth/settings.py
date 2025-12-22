@@ -132,6 +132,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+STATICFILES_DIRS = [
+    BASE_DIR / 'frontend/dist',
+]
+
 # Media files (User uploads)
 MEDIA_URL = 'media/'
 MEDIA_ROOT = '/mnt/data/uploads'
