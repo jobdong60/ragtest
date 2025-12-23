@@ -35,6 +35,7 @@ urlpatterns = [
     path('manager/sync-today/', admin_views.sync_today_data, name='sync_today_data'),
     path('manager/administration/', admin_views.admin_administration, name='admin_administration'),
     path('manager/administration/subjects/', admin_views.get_subjects_list, name='get_subjects_list'),
+    path('manager/administration/create/', admin_views.create_subject, name='create_subject'),
     path('manager/administration/update/', admin_views.update_subject, name='update_subject'),
     path('manager/administration/sync-new-users/', admin_views.sync_new_users_to_management, name='sync_new_users_to_management'),
 

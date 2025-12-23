@@ -1010,93 +1010,78 @@ def get_polar_realtime_data(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-@staff_member_required
-@csrf_exempt
-
-
-@staff_member_required
-@csrf_exempt
-def create_subject(request):
-    """ëŒ€ìƒì ì‹ ê·œ ë“±ë¡ API - PolarUser ìƒì„±"""
-    try:
-        from ..models import PolarUser
-        import random
-        import string
-        import json
-        from datetime import date
-        import traceback
-
-        if request.method != 'POST':
-            return JsonResponse({'success': False, 'error': 'POST ìš”ì²­ë§Œ í—ˆìš©ë©ë‹ˆë‹¤'}, status=405)
-
-        data = json.loads(request.body)
-
-        # í•„ìˆ˜ í•„ë“œ ì¶”ì¶œ
-        full_name = data.get('full_name')
-        phone_number = data.get('phone_number')
-        birth_year = data.get('birth_year')
-        gender = data.get('gender')
-        height = data.get('height')
-        weight = data.get('weight')
-
-        if not all([full_name, phone_number, birth_year, gender]):
-            return JsonResponse({'success': False, 'error': 'ì´ë¦„, ì „í™”ë²ˆí˜¸, ì¶œìƒì—°ë„, ì„±ë³„ì€ í•„ìˆ˜ í•­ëª©ì…ë‹ˆë‹¤.'}, status=400)
-
-        # ìƒë…„ì›”ì¼ ìƒì„± (YYYY-01-01)
-        try:
-            date_of_birth = date(int(birth_year), 1, 1)
-        except ValueError:
-             return JsonResponse({'success': False, 'error': 'ì˜¬ë°”ë¥¸ ì¶œìƒì—°ë„ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”.'}, status=400)
-
-        # ì‚¬ìš©ìëª… ìƒì„± (ì´ë¦„ + ì „í™”ë²ˆí˜¸ ë’¤ 4ìë¦¬)
-        # ì¤‘ë³µ ì‹œ ëœë¤ ë¬¸ì ì¶”ê°€
-        base_username = f"user_{phone_number[-4:]}"
-        username = base_username
-        counter = 1
-        while PolarUser.objects.filter(username=username).exists():
-            username = f"{base_username}_{counter}"
-            counter += 1
-
-        # ë¹„ë°€ë²ˆí˜¸ëŠ” ì „í™”ë²ˆí˜¸ ë’¤ 4ìë¦¬ë¡œ ì„¤ì •
-        password = phone_number[-4:]
-
-        # PolarUser ìƒì„±
-        new_subject = PolarUser(
-            username=username,
-            full_name=full_name,
-            phone_number=phone_number,
-            gender=gender,
-            date_of_birth=date_of_birth,
-            height=float(height) if height else None,
-            weight=float(weight) if weight else None,
-            age=date.today().year - int(birth_year),
-            is_active=True
-        )
-        new_subject.set_password(password)
-        new_subject.save()
-
-        return JsonResponse({
-            'success': True,
-            'message': 'ëŒ€ìƒìê°€ ì„±ê³µì ìœ¼ë¡œ ë“±ë¡ë˜ì—ˆìŠµë‹ˆë‹¤.',
-            'subject': {
-                'username': new_subject.username,
-                'full_name': new_subject.full_name,
-                'phone_number': new_subject.phone_number,
-                'gender': new_subject.gender,
-                'age': new_subject.age,
-                'date_of_birth': new_subject.date_of_birth.isoformat()
-            }
-        })
-
-    except Exception as e:
-        import traceback
-        error_msg = f"Server Error: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg)
-        # Write to a debug file
-        try:
-            with open('c:/Users/cly0310/platform/fitbit-myhealth-main/debug_create_subject.log', 'w') as f:
-                f.write(error_msg)
-        except:
-            pass
-            
-        return JsonResponse({'success': False, 'error': f'ì„œë²„ ì˜¤ë¥˜: {str(e)}'}, status=500)
+@ s t a f f _ m e m b e r _ r e q u i r e d  
+ @ c s r f _ e x e m p t  
+ d e f   c r e a t e _ s u b j e c t ( r e q u e s t ) :  
+         " " " ? € ? ø¬Æ  ? ‰ÈËÑ  ? E®	É  A P I   -   P o l a r U s e r   ? yÅf¯" " "  
+         f r o m   . . m o d e l s   i m p o r t   P o l a r U s e r  
+         i m p o r t   r a n d o m  
+         i m p o r t   s t r i n g  
+  
+         i f   r e q u e s t . m e t h o d   ! =   ' P O S T ' :  
+                 r e t u r n   J s o n R e s p o n s e ( { ' s u c c e s s ' :   F a l s e ,   ' e r r o r ' :   ' P O S T   ? ¿½Ì®Íù? ? I³œÂ? x$rµ? ? } ,   s t a t u s = 4 0 5 )  
+  
+         t r y :  
+                 d a t a   =   j s o n . l o a d s ( r e q u e s t . b o d y )  
+                  
+                 #   ? ©¯Ô²  ? ¨¯v¼  pu¿½gÑ 
+                 f u l l _ n a m e   =   d a t a . g e t ( ' f u l l _ n a m e ' )  
+                 p h o n e _ n u m b e r   =   d a t a . g e t ( ' p h o n e _ n u m b e r ' )  
+                 b i r t h _ y e a r   =   d a t a . g e t ( ' b i r t h _ y e a r ' )  
+                 g e n d e r   =   d a t a . g e t ( ' g e n d e r ' )  
+                 h e i g h t   =   d a t a . g e t ( ' h e i g h t ' )  
+                 w e i g h t   =   d a t a . g e t ( ' w e i g h t ' )  
+  
+                 i f   n o t   a l l ( [ f u l l _ n a m e ,   p h o n e _ n u m b e r ,   b i r t h _ y e a r ,   g e n d e r ] ) :  
+                         r e t u r n   J s o n R e s p o n s e ( { ' s u c c e s s ' :   F a l s e ,   ' e r r o r ' :   ' ?  ³ëÊ,   ? ª¯•Á0J³ÇÀ,   pu–Än®? Õ¬Ä¸,   ? E®Ğ? €   ? ©¯Ô²  ? ? I0? …°rµ? ? ' } ,   s t a t u s = 4 0 0 )  
+  
+                 #   ? xÅ°? ¿½*Å  ? yÅf¯  ( Y Y Y Y - 0 1 - 0 1 )  
+                 t r y :  
+                         d a t e _ o f _ b i r t h   =   d a t e ( i n t ( b i r t h _ y e a r ) ,   1 ,   1 )  
+                 e x c e p t   V a l u e E r r o r :  
+                           r e t u r n   J s o n R e s p o n s e ( { ' s u c c e s s ' :   F a l s e ,   ' e r r o r ' :   ' ? IîÎ\t? pu–Än®? Õ¬Ä¸\t? ? …°0È? ³ÿ? „º‚Â. ' } ,   s t a t u s = 4 0 0 )  
+  
+                 #   ? JœÂ? .ºxÌ  ? yÅf¯  ( ?  ³ëÊ  +   ? ª¯•Á0J³ÇÀ  ? ? 4 ? .º%)  
+                 #   åN»¬°  ? ? ? •Ä!·  ş„ºÆ  pu½½?  
+                 b a s e _ u s e r n a m e   =   f " u s e r _ { p h o n e _ n u m b e r [ - 4 : ] } "  
+                 u s e r n a m e   =   b a s e _ u s e r n a m e  
+                 c o u n t e r   =   1  
+                 w h i l e   P o l a r U s e r . o b j e c t s . f i l t e r ( u s e r n a m e = u s e r n a m e ) . e x i s t s ( ) :  
+                         u s e r n a m e   =   f " { b a s e _ u s e r n a m e } _ { c o u n t e r } "  
+                         c o u n t e r   + =   1  
+  
+                 #   n“¨¯? 0J³ÇÀ? ? ? ª¯•Á0J³ÇÀ  ? ? 4 ? .º%áo? ? |1È 
+                 p a s s w o r d   =   p h o n e _ n u m b e r [ - 4 : ]  
+  
+                 #   P o l a r U s e r   ? yÅf¯ 
+                 n e w _ s u b j e c t   =   P o l a r U s e r (  
+                         u s e r n a m e = u s e r n a m e ,  
+                         f u l l _ n a m e = f u l l _ n a m e ,  
+                         p h o n e _ n u m b e r = p h o n e _ n u m b e r ,  
+                         g e n d e r = g e n d e r ,  
+                         d a t e _ o f _ b i r t h = d a t e _ o f _ b i r t h ,  
+                         h e i g h t = f l o a t ( h e i g h t )   i f   h e i g h t   e l s e   N o n e ,  
+                         w e i g h t = f l o a t ( w e i g h t )   i f   w e i g h t   e l s e   N o n e ,  
+                         a g e = d a t e . t o d a y ( ) . y e a r   -   i n t ( b i r t h _ y e a r ) ,  
+                         i s _ a c t i v e = T r u e  
+                 )  
+                 n e w _ s u b j e c t . s e t _ p a s s w o r d ( p a s s w o r d )  
+                 n e w _ s u b j e c t . s a v e ( )  
+  
+                 r e t u r n   J s o n R e s p o n s e ( {  
+                         ' s u c c e s s ' :   T r u e ,  
+                         ' m e s s a g e ' :   ' ? € ? ø¬Æ›Z€   ? C®¬°? ø¬]Äáo? ? E®	É? ÁÀ¿? ì´rµ? ? ' ,  
+                         ' s u b j e c t ' :   {  
+                                 ' u s e r n a m e ' :   n e w _ s u b j e c t . u s e r n a m e ,  
+                                 ' f u l l _ n a m e ' :   n e w _ s u b j e c t . f u l l _ n a m e ,  
+                                 ' p h o n e _ n u m b e r ' :   n e w _ s u b j e c t . p h o n e _ n u m b e r ,  
+                                 ' g e n d e r ' :   n e w _ s u b j e c t . g e n d e r ,  
+                                 ' a g e ' :   n e w _ s u b j e c t . a g e ,  
+                                 ' d a t e _ o f _ b i r t h ' :   n e w _ s u b j e c t . d a t e _ o f _ b i r t h . i s o f o r m a t ( )  
+                         }  
+                 } )  
+  
+         e x c e p t   E x c e p t i o n   a s   e :  
+                 l o g g e r . e r r o r ( f " ? € ? ø¬Æ  ? E®	É  ? {1ŸÊ:   { e } " )  
+                 r e t u r n   J s o n R e s p o n s e ( { ' s u c c e s s ' :   F a l s e ,   ' e r r o r ' :   f ' ? •Ä­Ï  ? {1ŸÊ:   { s t r ( e ) } ' } ,   s t a t u s = 5 0 0 )  
+ 
